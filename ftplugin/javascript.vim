@@ -146,39 +146,31 @@ function! s:IsInNote()
     if s:IsPrev(prevText, '/\*\([^*]\|\*[^/]\|\*$\)*') != ''
         return '/*'
     endif
-    let lineIn = '' 
-    let lineInPos = -1
+    let pair = ''
     let i = 0
     let len = strlen(prevStr)
-    let prevCh = ''
     while i < len
         let ch = prevStr[i]
-        if lineIn != ''
-            if lineIn == '/' && lineInPos == i - 1 && ch == '/'
-                let lineIn = '//'
-                break
-            elseif ch == lineIn && prevCh != '\'
-                if i != len - 1
-                    let lineIn = ''
-                endif
+        if pair != ''
+            " escape
+            if ch == '\'
+                " skip next char
+                let i += 1
+            elseif pair == ch
+                " leave pair
+                let pair = ''
             endif
-        elseif ch == '"' || ch == "'"
-            let lineIn = ch
-            let lineInPos = i
-        elseif ch == '/' && s:IsPrev(prevCh, '[;,(]') != ''
-            let lineIn = ch
-            let lineInPos = i
-        elseif ch == '/' && prevCh == '/'
-            let lineIn = '//'
-            break
+        elseif match("\"'`/", ch) != -1
+            " inline cmt
+            if ch == '/' && i + 1 < len && prevStr[i + 1] == '/'
+                return '//'
+            endif
+            " in pair
+            let pair = ch
         endif
-        let prevCh = ch
         let i += 1
     endwhile
-    if lineIn != ''
-        return lineIn
-    endif
-    return ''
+    return pair
 endfunction
 
 function s:IsPrev(str, regex, ...)
