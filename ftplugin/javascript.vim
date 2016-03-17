@@ -160,7 +160,7 @@ function! s:IsInNote()
                 " leave pair
                 let pair = ''
             endif
-        elseif match("\"'`/", ch) != -1
+        elseif stridx("\"'`/", ch) != -1
             " inline cmt
             if ch == '/' && i + 1 < len && prevStr[i + 1] == '/'
                 return '//'
