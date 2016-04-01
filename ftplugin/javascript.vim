@@ -5,7 +5,7 @@ let loaded_autospace_js = 1
 
 au CursorMovedI *.js call s:Main()
 
-function s:Main()
+fun s:Main()
     if exists("g:enable_autospace") && !g:enable_autospace
         let b:buffer_len = s:GetBufferLen()
         return
@@ -19,15 +19,20 @@ function s:Main()
         call s:JsTypingHandler()
     endif
     let b:buffer_len = s:GetBufferLen()
-endfunction
+endfun
 
-function! s:GetBufferLen()
+fun! s:GetBufferLen()
     return line2byte(line("$")+1)
-endfunction
+endfun
 
 let s:jsVarExp = "[a-zA-Z0-9_\\$#@'\\])\"]"
+let s:jsKeywords = '|abstract|arguments|boolean|break|byte|case|catch|char|class|const|continue|debugger|default|delete|do|double|else|enum|eval|export|extends|false|final|finally|float|for|function|goto|if|implements|import|in|instanceof|int|interface|let|long|native|new|null|package|private|protected|public|return|short|static|super|switch|synchronized|this|throw|throws|transient|true|try|typeof|var|void|volatile|while|with|yield|'
 
-function! s:CursorSubLine(count)
+fun! s:isKeyword(w)
+    return stridx(s:jsKeywords, '|'.a:w.'|') != -1
+endfun
+
+fun! s:CursorSubLine(count)
     let pos = col('.') - 1
     let preStr=strpart(getline('.'), 0, pos)
     let currLine = line('.')
@@ -43,9 +48,9 @@ function! s:CursorSubLine(count)
     endif
     call add(lines, preStr)
     return join(lines, "\n")
-endfunction
+endfun
 
-function s:JsTypingHandler()
+fun s:JsTypingHandler()
     let pos = col('.') - 1
     let prevStr = s:CursorSubLine(0)
     let prevText = s:CursorSubLine(100)
@@ -90,13 +95,19 @@ function s:JsTypingHandler()
         return
     endif
     
-    let exp = printf('%s\([+*%><=&/|?-]\)', s:jsVarExp)
-    let prev = s:IsPrev(prevStr, exp, 1)
-    if strlen(prev) > 0
+    let m = matchlist(prevStr, printf('\(%s\+\)\([+*%><=&/|?-]\)$', s:jsVarExp))
+    if len(m) && !s:isKeyword(m[1])
+        let prev = m[2]
         let beg = pos - strlen(prev)
         let rep = printf(' %s ', prev)
         call s:CurrentLineReplace(beg, pos, rep)
         return
+    endif
+
+    let m = matchlist(prevStr, '\(function\|yield\)\*$')
+    if len(m)
+        call s:CurrentLineReplace(pos, pos, ' ')
+        return 
     endif
     
     let prev = s:IsPrev(prevStr, printf('[,:;]\(%s\)', s:jsVarExp), 1)
@@ -138,12 +149,12 @@ function s:JsTypingHandler()
         return
     endif
     
-endfunction
+endfun
 
-function! s:IsInNote()
+fun! s:IsInNote()
     let prevStr = s:CursorSubLine(0)
     let prevText = s:CursorSubLine(100)
-    if s:IsPrev(prevText, '/\*\([^*]\|\*[^/]\|\*$\)*') != ''
+    if s:IsPrev(prevText, '\n\s*/\*\([^*]\|\*[^/]\|\*$\)*') != ''
         return '/*'
     endif
     let pair = ''
@@ -171,9 +182,9 @@ function! s:IsInNote()
         let i += 1
     endwhile
     return pair
-endfunction
+endfun
 
-function s:IsPrev(str, regex, ...)
+fun s:IsPrev(str, regex, ...)
     let regex = printf('\(%s\)$', a:regex)
     let match = matchlist(a:str, regex)
     if !exists('a:1')
@@ -186,13 +197,13 @@ function s:IsPrev(str, regex, ...)
     else 
         return match[group]
     endif
-endfunction
+endfun
 
-function s:CurrentLineReplace(beg, end, str)
+fun s:CurrentLineReplace(beg, end, str)
     let preLine = getline('.')
     let newLine = strpart(preLine, 0, a:beg).a:str.strpart(preLine, a:end)
     let c = col('.')
     call setline('.', newLine)
     call cursor(line('.'), c + (strlen(a:str) - (a:end - a:beg)))
-endfunction
+endfun
 
