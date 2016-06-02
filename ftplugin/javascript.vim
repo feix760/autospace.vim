@@ -62,6 +62,10 @@ fun s:JsTypingHandler()
         endif
         return
     endif
+    " jsx skip
+    if !empty(matchlist(prevStr, '^\s*<\|>\s*$')) 
+        return
+    endif
     let prev = s:IsPrev(prevStr, '[；：，。‘’”“？（）！]')
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
