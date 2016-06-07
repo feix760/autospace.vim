@@ -55,15 +55,15 @@ fun s:JsTypingHandler()
     let prevStr = s:CursorSubLine(0)
     let prevText = s:CursorSubLine(100)
     let note = s:IsInNote()
+    " jsx skip
+    if !empty(matchlist(prevStr, '^\s*\(<\|\(div\|ul\|span\|a\)[\.#]\)\|>\s*$')) 
+        return
+    endif
     if note != ''
         " echo 'in note:' note
         if note == '"' && prevStr[strlen(prevStr) - 1] == '"'
             call s:CurrentLineReplace(pos - 1, pos, '"双')
         endif
-        return
-    endif
-    " jsx skip
-    if !empty(matchlist(prevStr, '^\s*<\|>\s*$')) 
         return
     endif
     let prev = s:IsPrev(prevStr, '[；：，。‘’”“？（）！]')
