@@ -7,7 +7,7 @@
 To install using [Vundle](https://github.com/gmarik/vundle):
 
     " add this line to your .vimrc file
-    Plugin 'mattn/emmet-vim'
+    Plugin 'feix760/autospace.vim'
 
 or:
 
