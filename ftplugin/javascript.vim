@@ -55,17 +55,21 @@ fun s:JsTypingHandler()
     let prevStr = s:CursorSubLine(0)
     let prevText = s:CursorSubLine(100)
     let note = s:IsInNote()
+
     " jsx skip
-    if !empty(matchlist(prevStr, '^\s*\(<\|\(div\|ul\|span\|a\)[\.#]\)\|>\s*$')) 
+    if !empty(matchlist(prevStr, '^\s*<\(a\|div\|ul\|span\)\>')) 
         return
     endif
+
+    " 双引号"提示
     if note != ''
-        " echo 'in note:' note
         if note == '"' && prevStr[strlen(prevStr) - 1] == '"'
             call s:CurrentLineReplace(pos - 1, pos, '"双')
         endif
         return
     endif
+
+    " 中文符号
     let prev = s:IsPrev(prevStr, '[；：，。‘’”“？（）！]')
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
@@ -74,6 +78,7 @@ fun s:JsTypingHandler()
         return
     endif
 
+    " == -> ===
     let prev = s:IsPrev(prevStr, '\s*\(==\|= =\|!=\|! =\)')
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
@@ -82,15 +87,16 @@ fun s:JsTypingHandler()
         return
     endif
 
-    let prev = s:IsPrev(prevStr, '< =\|> =\|= =\|! =\|== =\|& &\|| |\|/ /\|!= =')
+    " 'a < =' -> 'a <= '
+    let prev = s:IsPrev(prevStr, '< =\|> =\|= =\|! =\|== =\|& &\|| |\|/ /\|!= =\|= >')
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
-        let rep = substitute(prev, '\s\+', '', 'g')
-        let rep = printf('%s ', rep)
+        let rep = printf('%s ', substitute(prev, '\s\+', '', 'g'))
         call s:CurrentLineReplace(beg, pos, rep)
         return
     endif
     
+    " 'a + +' -> 'a++'
     let prev = s:IsPrev(prevStr, '\s\?\(+ +\|- -\)')
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
@@ -99,6 +105,7 @@ fun s:JsTypingHandler()
         return
     endif
     
+    " 'a+' -> 'a + '
     let m = matchlist(prevStr, printf('\(%s\+\)\([+*%><=&/|?-]\)$', s:jsVarExp))
     if len(m) && !s:isKeyword(m[1])
         let prev = m[2]
@@ -108,13 +115,15 @@ fun s:JsTypingHandler()
         return
     endif
 
-    let m = matchlist(prevStr, '\(function\|yield\)\*$')
-    if len(m)
+    " 'function*' -> 'function* '
+    let prev = s:IsPrev(prevStr, '\(function\|yield\)\*$')
+    if strlen(prev) > 0
         call s:CurrentLineReplace(pos, pos, ' ')
         return 
     endif
     
-    let prev = s:IsPrev(prevStr, printf('[,:;]\(%s\)', s:jsVarExp), 1)
+    " ';if' -> '; if'
+    let prev = s:IsPrev(prevStr, printf('[,:;]\zs\(%s\)', s:jsVarExp))
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
         let rep = printf(' %s', prev)
@@ -122,7 +131,8 @@ fun s:JsTypingHandler()
         return
     endif
     
-    let prev = s:IsPrev(prevStr, '\(\s\|^\)\(if\|for\|while\|switch\|catch\)\((\)', 3)
+    " 'if(' => 'if ('
+    let prev = s:IsPrev(prevStr, '\<\(if\|for\|while\|switch\|catch\)\zs(')
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
         let rep = printf(' %s', prev)
@@ -130,7 +140,8 @@ fun s:JsTypingHandler()
         return
     endif
     
-    let prev = s:IsPrev(prevStr, '}\([a-zA-Z]\)', 1)
+    " '}e' -> '} e' ('} else')
+    let prev = s:IsPrev(prevStr, '}\zs[a-zA-Z]')
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
         let rep = printf(' %s', prev)
@@ -138,7 +149,9 @@ fun s:JsTypingHandler()
         return
     endif
     
-    let prev = s:IsPrev(prevStr, '\(try\|else\|else if\|finaly\|do\|)\)\({\)', 2)
+    " 'try{' -> 'try {'
+    " 'if (a){' -> 'if (a) {'
+    let prev = s:IsPrev(prevStr, '\(try\|else\|else if\|finaly\|do\|)\)\zs{')
     if strlen(prev) > 0
         let beg = pos - strlen(prev)
         let rep = printf(' %s', prev)
@@ -146,6 +159,7 @@ fun s:JsTypingHandler()
         return
     endif
 
+    " '; \n' -> ';\n'
     let prev = s:IsPrev(prevText, ' \+[\n\r]')
     if strlen(prev) > 0
         let prevLine = line('.') - 1
@@ -188,18 +202,13 @@ fun! s:IsInNote()
     return pair
 endfun
 
-fun s:IsPrev(str, regex, ...)
-    let regex = printf('\(%s\)$', a:regex)
+fun s:IsPrev(str, regex)
+    let regex = printf('%s$', a:regex)
     let match = matchlist(a:str, regex)
-    if !exists('a:1')
-        let group = 0
-    else
-        let group = a:1 + 1
-    endif
     if empty(match)
         return ''
     else 
-        return match[group]
+        return match[0]
     endif
 endfun
 
