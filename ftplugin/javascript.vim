@@ -57,7 +57,7 @@ fun s:JsTypingHandler()
     let note = s:IsInNote()
 
     " jsx skip
-    if !empty(matchlist(prevStr, '^\s*<\(a\|div\|ul\|span\)\>')) 
+    if !empty(matchlist(prevStr, '^\s*<\(a\|div\|ul\|span\)\>.*$')) 
         return
     endif
 
