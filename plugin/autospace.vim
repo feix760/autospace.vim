@@ -4,7 +4,6 @@ endif
 let loaded_autospace = 1
 
 let g:enable_autospace = 1
-
 fun! AutospaceToggle()
   if g:enable_autospace
     let g:enable_autospace = 0
@@ -15,11 +14,7 @@ fun! AutospaceToggle()
   endif
 endfun
 
-com! AutospaceToggle call AutospaceToggle()
-
-au CursorMovedI * call s:OnCursorMoved()
-
-fun s:OnCursorMoved()
+fun! s:OnCursorMoved()
   if g:enable_autospace
     if !exists("b:buffer_len")
       let b:buffer_len = s:GetBufferLen()
@@ -37,3 +32,7 @@ endfun
 fun! s:GetBufferLen()
   return line2byte(line("$")+1)
 endfun
+
+com! AutospaceToggle call AutospaceToggle()
+
+au CursorMovedI * call s:OnCursorMoved()
