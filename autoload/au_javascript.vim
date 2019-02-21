@@ -59,10 +59,8 @@ fun! au_javascript#typing()
   endif
 
   " 'a+' -> 'a + '
-  let m = matchlist(prevStr, printf('\(%s\+\)\([+*%><=&/|?-]\)', s:varChat))
-  if len(m)
-  " if len(m) && !s:isKeyword(m[1])
-    let prev = m[2]
+  let prev = s:IsPrev(prevStr, printf('%s\+\zs[+*%><=&/|-]', s:varChat))
+  if strlen(prev) > 0
     let beg = pos - strlen(prev)
     let rep = printf(' %s ', prev)
     call s:CurrentLineReplace(beg, pos, rep)
@@ -70,15 +68,14 @@ fun! au_javascript#typing()
   endif
 
   " 'function*' -> 'function* '
-  let prev = s:IsPrev(prevStr, '\(function\|yield\)\*')
+  let prev = s:IsPrev(prevStr, '\<\(function\|yield\)\*')
   if strlen(prev) > 0
-    echo 'xxxxx'
     call s:CurrentLineReplace(pos, pos, ' ')
     return 
   endif
 
   " ';if' -> '; if'
-  let prev = s:IsPrev(prevStr, printf('[,:;]\zs\(%s\)', s:varChat))
+  let prev = s:IsPrev(prevStr, printf('[,:;]\zs%s', s:varChat))
   if strlen(prev) > 0
     let beg = pos - strlen(prev)
     let rep = printf(' %s', prev)
@@ -124,11 +121,6 @@ fun! au_javascript#typing()
 endfun
 
 let s:varChat = '[a-zA-Z0-9_\-\$#@]'
-let s:keywords = '|abstract|arguments|boolean|break|byte|case|catch|char|class|const|continue|debugger|default|delete|do|double|else|enum|export|extends|false|final|finally|float|for|function|goto|if|implements|import|in|instanceof|int|interface|let|long|native|new|null|package|private|protected|public|return|short|static|super|switch|synchronized|this|throw|throws|transient|true|try|typeof|var|void|volatile|while|with|yield|await|'
-
-fun! s:isKeyword(w)
-  return stridx(s:keywords, '|'.a:w.'|') != -1
-endfun
 
 fun! s:CursorSubLine(count)
   let pos = col('.') - 1
